@@ -1,1 +1,26 @@
-.vscode
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Build artifacts
+/build/
+bin/
+dist/
+
+# Dependency directories (when using vendoring)
+vendor/
+
+# IDE/editor files
+.vscode/
+
+# Logs
+*.log
+
+# OS metadata
+.DS_Store
+Thumbs.db
