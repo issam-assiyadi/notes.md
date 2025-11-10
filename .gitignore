@@ -24,3 +24,7 @@ vendor/
 # OS metadata
 .DS_Store
 Thumbs.db
+
+
+# Drafts folders
+drafts
