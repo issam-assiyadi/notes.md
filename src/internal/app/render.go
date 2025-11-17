@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/jroimartin/gocui"
+	"portoflio.com/cli/internal/markdown"
 )
 
 
@@ -40,8 +41,19 @@ func (a *App) Render (g *gocui.Gui) error {
 		return nil
 	}
 
-	// TODO: render the md content
-	fmt.Fprintf(cv, "%s", a.Pages[a.CurrentPage].Content)
+	contentWidth, _ := cv.Size()
+	if contentWidth <= 0 {
+		contentWidth = 80
+	}
 
+	md := a.Pages[a.CurrentPage].Content
+
+	rendered, err := markdown.Render(md, contentWidth-1)
+	if err != nil {
+		fmt.Fprint(cv, md)
+		return nil
+	}
+
+	fmt.Fprint(cv, rendered)
 	return nil
 }
