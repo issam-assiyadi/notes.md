@@ -11,7 +11,6 @@ type App struct {
 	Pages       content.Pages
 	CurrentPage int
 
-	// I don't understand yet the role of those attribues
 	SidebarView string
 	ContentView string
 }
@@ -34,7 +33,12 @@ func (app *App) Run() error {
 	}
 	defer g.Close()
 
-	g.SetManagerFunc(app.layout)
+	g.SetManagerFunc(func(g *gocui.Gui) error {
+		if err := app.layout(g); err != nil {
+			return err
+		}
+		return app.Render(g)
+	})
 
 	// TODO: define keybinding in app/keybinding, this is just a minimal one.
 	if err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error { return gocui.ErrQuit }); err != nil {

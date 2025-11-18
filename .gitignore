@@ -17,6 +17,7 @@ vendor/
 
 # IDE/editor files
 .vscode/
+!.vscode/launch.json
 
 # Logs
 *.log
