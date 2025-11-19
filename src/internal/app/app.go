@@ -40,10 +40,7 @@ func (app *App) Run() error {
 		return app.Render(g)
 	})
 
-	// TODO: define keybinding in app/keybinding, this is just a minimal one.
-	if err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error { return gocui.ErrQuit }); err != nil {
-		return err
-	}
+	app.BindKeys(g)
 
 	if _, err := g.SetCurrentView(app.SidebarView); err != nil {
 		log.Println("unable to set initial view:", err)
