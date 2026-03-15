@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/jroimartin/gocui"
+	"portoflio.com/cli/internal/app/components/scrollview"
 	"portoflio.com/cli/internal/content"
 )
 
@@ -12,7 +13,7 @@ type App struct {
 	CurrentPage int
 
 	SidebarView string
-	ContentView string
+	Content     *scrollview.View
 }
 
 func New(pages content.Pages) *App {
@@ -21,7 +22,11 @@ func New(pages content.Pages) *App {
 		CurrentPage: 0,
 
 		SidebarView: "sidebar",
-		ContentView: "content",
+		Content: scrollview.New(scrollview.Config{
+			BaseName:       "content",
+			Title:          "Content",
+			ScrollbarWidth: 3,
+		}),
 	}
 }
 
