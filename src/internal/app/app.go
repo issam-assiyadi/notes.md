@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/jroimartin/gocui"
+	"portoflio.com/cli/internal/app/components/scrollview"
 	"portoflio.com/cli/internal/content"
 )
 
@@ -12,7 +13,7 @@ type App struct {
 	CurrentPage int
 
 	SidebarView string
-	ContentView string
+	Content     *scrollview.View
 }
 
 func New(pages content.Pages) *App {
@@ -21,7 +22,11 @@ func New(pages content.Pages) *App {
 		CurrentPage: 0,
 
 		SidebarView: "sidebar",
-		ContentView: "content",
+		Content: scrollview.New(scrollview.Config{
+			BaseName:       "content",
+			Title:          "Content",
+			ScrollbarWidth: 3,
+		}),
 	}
 }
 
@@ -40,10 +45,7 @@ func (app *App) Run() error {
 		return app.Render(g)
 	})
 
-	// TODO: define keybinding in app/keybinding, this is just a minimal one.
-	if err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error { return gocui.ErrQuit }); err != nil {
-		return err
-	}
+	app.BindKeys(g)
 
 	if _, err := g.SetCurrentView(app.SidebarView); err != nil {
 		log.Println("unable to set initial view:", err)
