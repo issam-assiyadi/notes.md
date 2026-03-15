@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/jroimartin/gocui"
-	"portoflio.com/cli/internal/markdown"
+	"notesmd.com/cli/internal/markdown"
 )
 
 func (a *App) Render(g *gocui.Gui) error {

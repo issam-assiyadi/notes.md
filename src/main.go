@@ -3,8 +3,8 @@ package main
 import (
 	"log"
 
-	"portoflio.com/cli/internal/app"
-	"portoflio.com/cli/internal/content"
+	"notesmd.com/cli/internal/app"
+	"notesmd.com/cli/internal/content"
 )
 
 func main() {

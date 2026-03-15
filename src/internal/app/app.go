@@ -4,8 +4,8 @@ import (
 	"log"
 
 	"github.com/jroimartin/gocui"
-	"portoflio.com/cli/internal/app/components/scrollview"
-	"portoflio.com/cli/internal/content"
+	"notesmd.com/cli/internal/app/components/scrollview"
+	"notesmd.com/cli/internal/content"
 )
 
 type App struct {
