@@ -1,4 +1,4 @@
-module portoflio.com/cli
+module notesmd.com/cli
 
 go 1.23.0
 
