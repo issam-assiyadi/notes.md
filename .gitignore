@@ -26,6 +26,9 @@ vendor/
 .DS_Store
 Thumbs.db
 
+# Local caches
+.cache/
+# question: still don't understand teh why we even need the cache here.
 
 # Drafts folders
 drafts
