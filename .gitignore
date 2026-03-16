@@ -15,9 +15,6 @@ dist/
 # Dependency directories (when using vendoring)
 vendor/
 
-# IDE/editor files
-.vscode/
-!.vscode/launch.json
 
 # Logs
 *.log
@@ -28,7 +25,6 @@ Thumbs.db
 
 # Local caches
 .cache/
-# question: still don't understand teh why we even need the cache here.
 
 # Drafts folders
 drafts
