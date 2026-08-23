@@ -6,9 +6,11 @@ on:
       - main
     paths:
       - '**/README.md'
+      - 'docs/demos/**'
   pull_request:
     paths:
       - '**/README.md'
+      - 'docs/demos/**'
 
 jobs:
   check-demos:
