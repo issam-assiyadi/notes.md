@@ -94,10 +94,14 @@ func (a *App) Render(g *gocui.Gui) error {
 		return err
 	}
 
+	if err := a.renderStatusBar(g); err != nil {
+		return err
+	}
+
 	markerStyle := selectedRowStyle(a.Preview.FocusFgColor(g))
 	gutterWidth := previewGutterWidth(len(a.previewLines))
 	focusLine := a.Preview.FocusLine()
-	return a.Preview.Render(g, func(v *gocui.View, contentWidth int) error {
+	if err := a.Preview.Render(g, func(v *gocui.View, contentWidth int) error {
 		for i, line := range a.previewLines {
 			if i != focusLine {
 				_, _ = fmt.Fprintln(v, line)
@@ -106,6 +110,19 @@ func (a *App) Render(g *gocui.Gui) error {
 			marker := fmt.Sprintf("%*d │ %s", gutterWidth, i+1, a.previewFocusText)
 			marker = runewidth.FillRight(marker, contentWidth)
 			_, _ = fmt.Fprintf(v, "%s%s%s\n", markerStyle, marker, rowStyleReset)
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	return a.Help.Render(g, func(v *gocui.View, contentWidth int) error {
+		for _, section := range a.helpSections() {
+			_, _ = fmt.Fprintf(v, "%s\n", section.title)
+			for _, line := range section.lines {
+				_, _ = fmt.Fprintf(v, "  %-10s %s\n", formatKey(line.key), line.desc)
+			}
+			_, _ = fmt.Fprintln(v)
 		}
 		return nil
 	})

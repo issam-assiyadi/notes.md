@@ -6,18 +6,46 @@ import (
 	"github.com/awesome-gocui/gocui"
 )
 
-func (a *App) BindKeys(g *gocui.Gui) error {
-	global := []struct {
-		key interface{}
-		fn  func(*gocui.Gui, *gocui.View) error
-	}{
-		{gocui.KeyCtrlC, a.quit},
-		{'q', a.quit},
-		{'r', a.rescan},
-		{'1', a.focusCategories},
-		{'2', a.focusItems},
+type appKeyBinding struct {
+	key  interface{}
+	fn   func(*gocui.Gui, *gocui.View) error
+	desc string
+}
+
+func (a *App) globalKeyBindings() []appKeyBinding {
+	return []appKeyBinding{
+		{gocui.KeyCtrlC, a.quit, "Quit"},
+		{'q', a.quit, "Quit"},
+		{'r', a.rescan, "Rescan"},
+		{'1', a.focusCategories, "Focus categories pane"},
+		{'2', a.focusItems, "Focus items pane"},
+		{'?', a.openHelp, "Show keybinding help"},
 	}
-	for _, b := range global {
+}
+
+func (a *App) categoryKeyBindings() []appKeyBinding {
+	return []appKeyBinding{
+		{gocui.KeyArrowDown, a.categoryMoveDown, "Move down"},
+		{'j', a.categoryMoveDown, "Move down"},
+		{gocui.KeyArrowUp, a.categoryMoveUp, "Move up"},
+		{'k', a.categoryMoveUp, "Move up"},
+	}
+}
+
+func (a *App) itemKeyBindings() []appKeyBinding {
+	return []appKeyBinding{
+		{gocui.KeyArrowDown, a.rowMoveDown, "Move down"},
+		{'j', a.rowMoveDown, "Move down"},
+		{gocui.KeyArrowUp, a.rowMoveUp, "Move up"},
+		{'k', a.rowMoveUp, "Move up"},
+		{gocui.KeyEnter, a.activateSelectedRow, "Open item / toggle folder"},
+		{'o', a.activateSelectedRow, "Open item / toggle folder"},
+		{gocui.KeySpace, a.activateSelectedRow, "Open item / toggle folder"},
+	}
+}
+
+func (a *App) BindKeys(g *gocui.Gui) error {
+	for _, b := range a.globalKeyBindings() {
 		if err := g.SetKeybinding("", b.key, gocui.ModNone, b.fn); err != nil {
 			return err
 		}
@@ -28,40 +56,18 @@ func (a *App) BindKeys(g *gocui.Gui) error {
 			return err
 		}
 	}
-
-	categoryKeys := []struct {
-		key interface{}
-		fn  func(*gocui.Gui, *gocui.View) error
-	}{
-		{gocui.KeyArrowDown, a.categoryMoveDown},
-		{'j', a.categoryMoveDown},
-		{gocui.KeyArrowUp, a.categoryMoveUp},
-		{'k', a.categoryMoveUp},
-	}
-	for _, b := range categoryKeys {
+	for _, b := range a.categoryKeyBindings() {
 		if err := g.SetKeybinding(a.Categories.WrapperName(), b.key, gocui.ModNone, b.fn); err != nil {
 			return err
 		}
 	}
 
-	itemKeys := []struct {
-		key interface{}
-		fn  func(*gocui.Gui, *gocui.View) error
-	}{
-		{gocui.KeyArrowDown, a.rowMoveDown},
-		{'j', a.rowMoveDown},
-		{gocui.KeyArrowUp, a.rowMoveUp},
-		{'k', a.rowMoveUp},
-		{gocui.KeyEnter, a.activateSelectedRow},
-		{'o', a.activateSelectedRow},
-		{gocui.KeySpace, a.activateSelectedRow},
-	}
 	for _, viewname := range []string{a.Content.WrapperName(), a.Content.ContentViewName(), a.Content.ScrollViewName()} {
 		if err := g.SetKeybinding(viewname, gocui.MouseLeft, gocui.ModNone, a.focusItems); err != nil {
 			return err
 		}
 	}
-	for _, b := range itemKeys {
+	for _, b := range a.itemKeyBindings() {
 		if err := g.SetKeybinding(a.Content.WrapperName(), b.key, gocui.ModNone, b.fn); err != nil {
 			return err
 		}
@@ -70,19 +76,24 @@ func (a *App) BindKeys(g *gocui.Gui) error {
 	if err := a.Preview.BindKeys(g, a.closePreview); err != nil {
 		return err
 	}
+	if err := a.Help.BindKeys(g, a.closeHelp); err != nil {
+		return err
+	}
 
 	return nil
 }
 
+func (a *App) modalOpen() bool { return a.Preview.IsOpen() || a.Help.IsOpen() }
+
 func (a *App) quit(g *gocui.Gui, v *gocui.View) error {
-	if a.Preview.IsOpen() {
+	if a.modalOpen() {
 		return nil
 	}
 	return gocui.ErrQuit
 }
 
 func (a *App) focusCategories(g *gocui.Gui, v *gocui.View) error {
-	if a.Preview.IsOpen() {
+	if a.modalOpen() {
 		return nil
 	}
 	a.focused = a.Categories.WrapperName()
@@ -91,7 +102,7 @@ func (a *App) focusCategories(g *gocui.Gui, v *gocui.View) error {
 }
 
 func (a *App) focusItems(g *gocui.Gui, v *gocui.View) error {
-	if a.Preview.IsOpen() {
+	if a.modalOpen() {
 		return nil
 	}
 	a.focused = a.Content.WrapperName()
@@ -142,7 +153,7 @@ func (a *App) activateSelectedRow(g *gocui.Gui, v *gocui.View) error {
 }
 
 func (a *App) rescan(g *gocui.Gui, v *gocui.View) error {
-	if a.Preview.IsOpen() {
+	if a.modalOpen() {
 		return nil
 	}
 	items, err := a.Service.Scan()
