@@ -23,6 +23,7 @@ type App struct {
 	Categories *scrollview.View
 	Content    *scrollview.View
 	Preview    *modal.Modal
+	Help       *modal.Modal
 
 	focused string
 
@@ -46,6 +47,10 @@ func New(svc *application.Service) (*App, error) {
 		}),
 		Preview: modal.New(modal.Config{
 			BaseName:       "preview",
+			ScrollbarWidth: 3,
+		}),
+		Help: modal.New(modal.Config{
+			BaseName:       "help",
 			ScrollbarWidth: 3,
 		}),
 	}

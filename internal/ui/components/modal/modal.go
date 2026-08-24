@@ -69,31 +69,52 @@ func (m *Modal) ScrollUp(g *gocui.Gui) error   { return m.view.ScrollUp(g) }
 func (m *Modal) JumpTop(g *gocui.Gui) error    { return m.view.JumpTop(g) }
 func (m *Modal) JumpBottom(g *gocui.Gui) error { return m.view.JumpBottom(g) }
 
+type keyBinding struct {
+	key  interface{}
+	fn   func(*gocui.Gui, *gocui.View) error
+	desc string
+}
+
+func (m *Modal) keyBindings(onClose func(*gocui.Gui, *gocui.View) error) []keyBinding {
+	return []keyBinding{
+		{'q', onClose, "Close"},
+		{gocui.KeyEsc, onClose, "Close"},
+		{gocui.KeyArrowDown, func(g *gocui.Gui, v *gocui.View) error { return m.ScrollDown(g) }, "Scroll down"},
+		{'j', func(g *gocui.Gui, v *gocui.View) error { return m.ScrollDown(g) }, "Scroll down"},
+		{gocui.KeyArrowUp, func(g *gocui.Gui, v *gocui.View) error { return m.ScrollUp(g) }, "Scroll up"},
+		{'k', func(g *gocui.Gui, v *gocui.View) error { return m.ScrollUp(g) }, "Scroll up"},
+		{gocui.KeyPgdn, func(g *gocui.Gui, v *gocui.View) error { return m.ScrollDown(g) }, "Scroll down"},
+		{gocui.KeyPgup, func(g *gocui.Gui, v *gocui.View) error { return m.ScrollUp(g) }, "Scroll up"},
+		{gocui.KeyHome, func(g *gocui.Gui, v *gocui.View) error { return m.JumpTop(g) }, "Jump to top"},
+		{gocui.KeyEnd, func(g *gocui.Gui, v *gocui.View) error { return m.JumpBottom(g) }, "Jump to bottom"},
+	}
+}
+
 // BindKeys registers the modal's standard controls on its own view, so
 // they only fire while it's focused: q/Esc call onClose, and the arrow
 // keys, j/k, PgUp/PgDn, Home, and End scroll it.
 func (m *Modal) BindKeys(g *gocui.Gui, onClose func(*gocui.Gui, *gocui.View) error) error {
-	keys := []struct {
-		key interface{}
-		fn  func(*gocui.Gui, *gocui.View) error
-	}{
-		{'q', onClose},
-		{gocui.KeyEsc, onClose},
-		{gocui.KeyArrowDown, func(g *gocui.Gui, v *gocui.View) error { return m.ScrollDown(g) }},
-		{'j', func(g *gocui.Gui, v *gocui.View) error { return m.ScrollDown(g) }},
-		{gocui.KeyArrowUp, func(g *gocui.Gui, v *gocui.View) error { return m.ScrollUp(g) }},
-		{'k', func(g *gocui.Gui, v *gocui.View) error { return m.ScrollUp(g) }},
-		{gocui.KeyPgdn, func(g *gocui.Gui, v *gocui.View) error { return m.ScrollDown(g) }},
-		{gocui.KeyPgup, func(g *gocui.Gui, v *gocui.View) error { return m.ScrollUp(g) }},
-		{gocui.KeyHome, func(g *gocui.Gui, v *gocui.View) error { return m.JumpTop(g) }},
-		{gocui.KeyEnd, func(g *gocui.Gui, v *gocui.View) error { return m.JumpBottom(g) }},
-	}
-	for _, k := range keys {
+	for _, k := range m.keyBindings(onClose) {
 		if err := g.SetKeybinding(m.WrapperName(), k.key, gocui.ModNone, k.fn); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// HelpEntry is the key/description pair a modal exposes for help screens.
+type HelpEntry struct {
+	Key  interface{}
+	Desc string
+}
+
+func (m *Modal) HelpEntries() []HelpEntry {
+	bindings := m.keyBindings(nil) // fn is discarded below, so nil is safe here
+	entries := make([]HelpEntry, len(bindings))
+	for i, b := range bindings {
+		entries[i] = HelpEntry{Key: b.key, Desc: b.desc}
+	}
+	return entries
 }
 
 // Layout lays the modal out as a centered overlay covering ~90% of the
