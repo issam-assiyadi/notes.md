@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"time"
+
 	"github.com/issam-assiyadi/leftmark/application"
 	"github.com/issam-assiyadi/leftmark/domain"
 	"github.com/issam-assiyadi/leftmark/internal/ui/components/modal"
@@ -21,6 +23,7 @@ type App struct {
 	RowSelected      int
 
 	categoriesVisible bool
+	leaderArmedAt     time.Time
 
 	Categories *scrollview.View
 	Content    *scrollview.View

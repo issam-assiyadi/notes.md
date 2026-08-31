@@ -10,7 +10,7 @@ const statusBarViewName = "statusbar"
 
 const statusBarStyle = "\x1b[38;5;244m"
 
-const statusBarText = "↑/↓ | k/j Move   Enter/Space Open   r Rescan   c Categories   ? Help   q Quit"
+const statusBarText = "↑/↓ | k/j Move   Enter/o Open   r Rescan   <leader>e Categories   ? Help   q Quit"
 
 func (a *App) layoutStatusBar(g *gocui.Gui, maxX, maxY int) error {
 	v, err := g.SetView(statusBarViewName, -1, maxY-2, maxX, maxY, 0)
