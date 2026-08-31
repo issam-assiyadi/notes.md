@@ -20,6 +20,8 @@ type App struct {
 	CategorySelected int
 	RowSelected      int
 
+	categoriesVisible bool
+
 	Categories *scrollview.View
 	Content    *scrollview.View
 	Preview    *modal.Modal
@@ -55,6 +57,7 @@ func New(svc *application.Service) (*App, error) {
 		}),
 	}
 	a.focused = a.Categories.WrapperName()
+	a.categoriesVisible = true
 
 	items, err := svc.Scan()
 	if err != nil {

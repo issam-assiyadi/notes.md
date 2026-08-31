@@ -19,6 +19,7 @@ func (a *App) globalKeyBindings() []appKeyBinding {
 		{'r', a.rescan, "Rescan"},
 		{'1', a.focusCategories, "Focus categories pane"},
 		{'2', a.focusItems, "Focus items pane"},
+		{'c', a.toggleCategories, "Toggle categories pane"},
 		{'?', a.openHelp, "Show keybinding help"},
 	}
 }
@@ -93,12 +94,42 @@ func (a *App) quit(g *gocui.Gui, v *gocui.View) error {
 }
 
 func (a *App) focusCategories(g *gocui.Gui, v *gocui.View) error {
-	if a.modalOpen() {
+	if a.modalOpen() || !a.categoriesVisible {
 		return nil
 	}
 	a.focused = a.Categories.WrapperName()
 	_, err := g.SetCurrentView(a.focused)
 	return err
+}
+
+// toggleCategories shows or hides the Categories pane so Content can
+// expand to fill the freed width. modalOpen() guards against leaving a
+// modal's previousFocused pointing at a view we're about to delete. The
+// synchronous a.layout(g) call is required: run.go's manager renders
+// before it lays out, so without this the re-shown pane would draw one
+// empty frame before its views exist.
+func (a *App) toggleCategories(g *gocui.Gui, v *gocui.View) error {
+	if a.modalOpen() {
+		return nil
+	}
+	a.categoriesVisible = !a.categoriesVisible
+	if !a.categoriesVisible {
+		a.Categories.Delete(g)
+		if a.focused == a.Categories.WrapperName() {
+			a.focused = a.Content.WrapperName()
+		}
+	}
+
+	if g == nil {
+		return nil
+	}
+	if err := a.layout(g); err != nil {
+		return err
+	}
+	if _, err := g.SetCurrentView(a.focused); err != nil {
+		log.Println("categories: unable to focus view:", err)
+	}
+	return nil
 }
 
 func (a *App) focusItems(g *gocui.Gui, v *gocui.View) error {
