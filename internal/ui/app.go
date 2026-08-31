@@ -3,8 +3,10 @@ package ui
 import (
 	"time"
 
+	"github.com/issam-assiyadi/leftmark/adapter/config"
 	"github.com/issam-assiyadi/leftmark/application"
 	"github.com/issam-assiyadi/leftmark/domain"
+	"github.com/issam-assiyadi/leftmark/internal/ui/components/formmodal"
 	"github.com/issam-assiyadi/leftmark/internal/ui/components/modal"
 	"github.com/issam-assiyadi/leftmark/internal/ui/components/scrollview"
 )
@@ -29,14 +31,31 @@ type App struct {
 	Content    *scrollview.View
 	Preview    *modal.Modal
 	Help       *modal.Modal
+	ConfigForm *formmodal.Modal
 
 	focused string
 
 	previewLines     []string
 	previewFocusText string
+
+	registryPath   string
+	registry       config.Registry
+	projectRoot    string
+	ignorePatterns []string
+	registered     bool
 }
 
-func New(svc *application.Service) (*App, error) {
+// StartupConfig carries the project registry state resolved at startup
+// (see tui/leftmark/main.go) into the TUI.
+type StartupConfig struct {
+	RegistryPath string
+	Registry     config.Registry
+	Root         string
+	Ignore       []string
+	Registered   bool
+}
+
+func New(svc *application.Service, sc StartupConfig) (*App, error) {
 	a := &App{
 		Service:   svc,
 		collapsed: make(map[string]bool),
@@ -58,6 +77,14 @@ func New(svc *application.Service) (*App, error) {
 			BaseName:       "help",
 			ScrollbarWidth: 3,
 		}),
+		ConfigForm: formmodal.New(formmodal.Config{
+			BaseName: "configform",
+		}),
+		registryPath:   sc.RegistryPath,
+		registry:       sc.Registry,
+		projectRoot:    sc.Root,
+		ignorePatterns: sc.Ignore,
+		registered:     sc.Registered,
 	}
 	a.focused = a.Categories.WrapperName()
 	a.categoriesVisible = true

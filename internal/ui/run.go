@@ -43,7 +43,11 @@ func (a *App) Run() error {
 	if err := a.layout(g); err != nil {
 		return err
 	}
-	if _, err := g.SetCurrentView(a.focused); err != nil {
+	if !a.registered {
+		if err := a.openConfigForm(g, nil); err != nil {
+			return err
+		}
+	} else if _, err := g.SetCurrentView(a.focused); err != nil {
 		log.Println("unable to set initial view:", err)
 	}
 

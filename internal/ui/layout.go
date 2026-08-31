@@ -47,5 +47,8 @@ func (a *App) layout(g *gocui.Gui) error {
 	if err := a.Preview.Layout(g, maxX, maxY); err != nil {
 		return err
 	}
-	return a.Help.Layout(g, maxX, maxY)
+	if err := a.Help.Layout(g, maxX, maxY); err != nil {
+		return err
+	}
+	return a.ConfigForm.Layout(g, maxX, maxY)
 }

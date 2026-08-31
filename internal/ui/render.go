@@ -118,7 +118,7 @@ func (a *App) Render(g *gocui.Gui) error {
 		return err
 	}
 
-	return a.Help.Render(g, func(v *gocui.View, contentWidth int) error {
+	if err := a.Help.Render(g, func(v *gocui.View, contentWidth int) error {
 		for _, section := range a.helpSections() {
 			_, _ = fmt.Fprintf(v, "%s\n", section.title)
 			for _, line := range section.lines {
@@ -127,7 +127,11 @@ func (a *App) Render(g *gocui.Gui) error {
 			_, _ = fmt.Fprintln(v)
 		}
 		return nil
-	})
+	}); err != nil {
+		return err
+	}
+
+	return a.ConfigForm.Render(g)
 }
 
 const categoryMetaRightPad = 1

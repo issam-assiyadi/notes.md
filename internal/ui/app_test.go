@@ -12,7 +12,7 @@ import (
 func newTestApp(t *testing.T, dir string) *App {
 	t.Helper()
 	svc := leftmark.New(dir)
-	app, err := New(svc)
+	app, err := New(svc, StartupConfig{Root: dir, Registered: true})
 	if err != nil {
 		t.Fatalf("ui.New: %v", err)
 	}

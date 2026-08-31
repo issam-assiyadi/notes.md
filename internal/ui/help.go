@@ -6,6 +6,7 @@ import (
 
 	"github.com/awesome-gocui/gocui"
 
+	"github.com/issam-assiyadi/leftmark/internal/ui/components/formmodal"
 	"github.com/issam-assiyadi/leftmark/internal/ui/components/modal"
 )
 
@@ -25,6 +26,7 @@ func (a *App) helpSections() []helpSection {
 		{"Categories pane", toHelpLines(a.categoryKeyBindings())},
 		{"Items pane", toHelpLines(a.itemKeyBindings())},
 		{"Modal controls", fromModalEntries(a.Preview.HelpEntries())},
+		{"Config form", fromFormModalEntries(a.ConfigForm.HelpEntries())},
 	}
 }
 
@@ -44,6 +46,14 @@ func fromModalEntries(entries []modal.HelpEntry) []helpLine {
 	return lines
 }
 
+func fromFormModalEntries(entries []formmodal.HelpEntry) []helpLine {
+	lines := make([]helpLine, len(entries))
+	for i, e := range entries {
+		lines[i] = helpLine{key: e.Key, desc: e.Desc}
+	}
+	return lines
+}
+
 var keyLabels = map[gocui.Key]string{
 	gocui.KeyArrowDown: "↓",
 	gocui.KeyArrowUp:   "↑",
@@ -55,6 +65,9 @@ var keyLabels = map[gocui.Key]string{
 	gocui.KeyHome:      "Home",
 	gocui.KeyEnd:       "End",
 	gocui.KeyCtrlC:     "Ctrl+C",
+	gocui.KeyTab:       "Tab",
+	gocui.KeyBacktab:   "Shift+Tab",
+	gocui.KeyCtrlS:     "Ctrl+S",
 }
 
 func formatKey(key interface{}) string {

@@ -29,6 +29,7 @@ func (a *App) globalKeyBindings() []appKeyBinding {
 		{'1', a.focusCategories, "Focus categories pane"},
 		{'2', a.focusItems, "Focus items pane"},
 		{leaderChord('e'), a.toggleCategories, "Toggle categories pane"},
+		{'c', a.openConfigForm, "Edit project config"},
 		{'?', a.openHelp, "Show keybinding help"},
 	}
 }
@@ -95,11 +96,16 @@ func (a *App) BindKeys(g *gocui.Gui) error {
 	if err := a.Help.BindKeys(g, a.closeHelp); err != nil {
 		return err
 	}
+	if err := a.ConfigForm.BindKeys(g, a.submitConfigForm, a.cancelConfigForm); err != nil {
+		return err
+	}
 
 	return nil
 }
 
-func (a *App) modalOpen() bool { return a.Preview.IsOpen() || a.Help.IsOpen() }
+func (a *App) modalOpen() bool {
+	return a.Preview.IsOpen() || a.Help.IsOpen() || a.ConfigForm.IsOpen()
+}
 
 func (a *App) quit(g *gocui.Gui, v *gocui.View) error {
 	if a.modalOpen() {
