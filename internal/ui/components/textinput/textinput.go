@@ -19,15 +19,22 @@ var roundedFrameRunes = []rune{'─', '│', '╭', '╮', '╰', '╯'}
 type Config struct {
 	BaseName string
 	Title    string
+	// ConsumeChord, if set, is asked before a plain printable rune is
+	// inserted normally. Returning true means the rune completed
+	// something else (typically a <leader> chord) and must not be
+	// written into the field; the field otherwise behaves exactly like
+	// gocui's own DefaultEditor.
+	ConsumeChord func(g *gocui.Gui, v *gocui.View, ch rune) bool
 }
 
 type Input struct {
-	name  string
-	title string
+	name         string
+	title        string
+	consumeChord func(g *gocui.Gui, v *gocui.View, ch rune) bool
 }
 
 func New(cfg Config) *Input {
-	return &Input{name: cfg.BaseName, title: cfg.Title}
+	return &Input{name: cfg.BaseName, title: cfg.Title, consumeChord: cfg.ConsumeChord}
 }
 
 // Name is the gocui view name to focus or bind keys on.
@@ -51,6 +58,15 @@ func (i *Input) Layout(g *gocui.Gui, x0, y0, x1 int, initial string) error {
 		_, _ = fmt.Fprint(v, initial)
 		_ = v.SetCursor(len([]rune(initial)), 0)
 		scrollCursorIntoView(v)
+		if i.consumeChord != nil {
+			consume := i.consumeChord
+			v.Editor = gocui.EditorFunc(func(view *gocui.View, key gocui.Key, ch rune, mod gocui.Modifier) {
+				if ch != 0 && mod == 0 && consume(g, view, ch) {
+					return
+				}
+				gocui.DefaultEditor.Edit(view, key, ch, mod)
+			})
+		}
 	}
 	return nil
 }
