@@ -597,3 +597,17 @@ func TestConsumeConfigFormChordFalseWithNilView(t *testing.T) {
 		t.Errorf("consumeConfigFormChord(_, nil, 's') = true, want false (nil view)")
 	}
 }
+
+func TestCategoryKeyBindingsIncludeOForFocusItems(t *testing.T) {
+	app := newTestApp(t, t.TempDir())
+
+	found := false
+	for _, b := range app.categoryKeyBindings() {
+		if r, ok := b.key.(rune); ok && r == 'o' {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("categoryKeyBindings() = %+v, want an 'o' binding alongside Enter", app.categoryKeyBindings())
+	}
+}

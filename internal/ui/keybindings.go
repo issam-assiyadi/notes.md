@@ -41,6 +41,7 @@ func (a *App) categoryKeyBindings() []appKeyBinding {
 		{gocui.KeyArrowUp, a.categoryMoveUp, "Move up"},
 		{'k', a.categoryMoveUp, "Move up"},
 		{gocui.KeyEnter, a.focusItems, "Focus items pane"},
+		{'o', a.focusItems, "Focus items pane"},
 	}
 }
 
