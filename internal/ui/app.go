@@ -6,7 +6,8 @@ import (
 	"github.com/issam-assiyadi/leftmark/adapter/config"
 	"github.com/issam-assiyadi/leftmark/application"
 	"github.com/issam-assiyadi/leftmark/domain"
-	"github.com/issam-assiyadi/leftmark/internal/ui/components/formmodal"
+	"github.com/issam-assiyadi/leftmark/internal/ui/components/confirmmodal"
+	"github.com/issam-assiyadi/leftmark/internal/ui/components/formpage"
 	"github.com/issam-assiyadi/leftmark/internal/ui/components/modal"
 	"github.com/issam-assiyadi/leftmark/internal/ui/components/scrollview"
 )
@@ -26,12 +27,14 @@ type App struct {
 
 	categoriesVisible bool
 	leaderArmedAt     time.Time
+	leaderArmedInView string
 
-	Categories *scrollview.View
-	Content    *scrollview.View
-	Preview    *modal.Modal
-	Help       *modal.Modal
-	ConfigForm *formmodal.Modal
+	Categories    *scrollview.View
+	Content       *scrollview.View
+	Preview       *modal.Modal
+	Help          *modal.Modal
+	ConfigForm    *formpage.Page
+	ConfirmConfig *confirmmodal.Modal
 
 	focused string
 
@@ -77,8 +80,10 @@ func New(svc *application.Service, sc StartupConfig) (*App, error) {
 			BaseName:       "help",
 			ScrollbarWidth: 3,
 		}),
-		ConfigForm: formmodal.New(formmodal.Config{
-			BaseName: "configform",
+		ConfirmConfig: confirmmodal.New(confirmmodal.Config{
+			BaseName:     "configconfirm",
+			ConfirmLabel: "Configure",
+			DismissLabel: "Skip",
 		}),
 		registryPath:   sc.RegistryPath,
 		registry:       sc.Registry,
@@ -86,6 +91,14 @@ func New(svc *application.Service, sc StartupConfig) (*App, error) {
 		ignorePatterns: sc.Ignore,
 		registered:     sc.Registered,
 	}
+	// ConfigForm is wired up separately, once a exists: its fields' own
+	// ConsumeChord hook needs a bound App method (see consumeConfigFormChord
+	// in configform.go), which can't reference a from inside a's own
+	// struct literal above.
+	a.ConfigForm = formpage.New(formpage.Config{
+		BaseName:     "configform",
+		ConsumeChord: a.consumeConfigFormChord,
+	})
 	a.focused = a.Categories.WrapperName()
 	a.categoriesVisible = true
 

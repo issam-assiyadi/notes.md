@@ -44,7 +44,7 @@ func (a *App) Run() error {
 		return err
 	}
 	if !a.registered {
-		if err := a.openConfigForm(g, nil); err != nil {
+		if err := a.openConfigConfirm(g, nil); err != nil {
 			return err
 		}
 	} else if _, err := g.SetCurrentView(a.focused); err != nil {

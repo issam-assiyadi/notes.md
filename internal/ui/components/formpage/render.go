@@ -1,4 +1,4 @@
-package formmodal
+package formpage
 
 import (
 	"fmt"
@@ -11,18 +11,18 @@ import (
 // user input, and Render runs every frame - clearing and rewriting them the
 // way every other view in this codebase does would erase whatever the user
 // is in the middle of typing.
-func (m *Modal) Render(g *gocui.Gui) error {
-	if !m.open {
+func (p *Page) Render(g *gocui.Gui) error {
+	if !p.open {
 		return nil
 	}
 
-	m.save.Render(g, m.focus == fieldSave)
-	m.cancel.Render(g, m.focus == fieldCancel)
+	p.save.Render(g, p.focus == fieldSave)
+	p.cancel.Render(g, p.focus == fieldCancel)
 
-	if v, err := g.View(m.errorLineName()); err == nil {
+	if v, err := g.View(p.errorLineName()); err == nil {
 		v.Clear()
-		if m.errorText != "" {
-			fmt.Fprintf(v, "\x1b[31m%s\x1b[0m", m.errorText)
+		if p.errorText != "" {
+			_, _ = fmt.Fprintf(v, "\x1b[31m%s\x1b[0m", p.errorText)
 		}
 	}
 	return nil

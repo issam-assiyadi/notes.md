@@ -4,7 +4,9 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
+	"github.com/awesome-gocui/gocui"
 	"github.com/issam-assiyadi/leftmark"
 	"github.com/issam-assiyadi/leftmark/domain"
 )
@@ -377,5 +379,221 @@ func TestToggleCategoriesLeaderExpires(t *testing.T) {
 	}
 	if !app.categoriesVisible {
 		t.Errorf("categoriesVisible = false after the leader window expired, want unchanged true")
+	}
+}
+
+func TestOpenConfigConfirmOpensModal(t *testing.T) {
+	app := newTestApp(t, t.TempDir())
+
+	if err := app.openConfigConfirm(nil, nil); err != nil {
+		t.Fatalf("openConfigConfirm: %v", err)
+	}
+	if !app.ConfirmConfig.IsOpen() {
+		t.Errorf("ConfirmConfig.IsOpen() = false after openConfigConfirm, want true")
+	}
+}
+
+func TestConfirmConfigureSkipRestoresFocus(t *testing.T) {
+	app := newTestApp(t, t.TempDir())
+	previousFocused := app.focused
+
+	if err := app.openConfigConfirm(nil, nil); err != nil {
+		t.Fatalf("openConfigConfirm: %v", err)
+	}
+	if err := app.confirmConfigureSkip(nil, nil); err != nil {
+		t.Fatalf("confirmConfigureSkip: %v", err)
+	}
+	if app.ConfirmConfig.IsOpen() {
+		t.Errorf("ConfirmConfig.IsOpen() = true after confirmConfigureSkip, want false")
+	}
+	if app.focused != previousFocused {
+		t.Errorf("focused = %q after confirmConfigureSkip, want restored to %q", app.focused, previousFocused)
+	}
+}
+
+func TestConfirmConfigureYesOpensConfigForm(t *testing.T) {
+	app := newTestApp(t, t.TempDir())
+
+	if err := app.openConfigConfirm(nil, nil); err != nil {
+		t.Fatalf("openConfigConfirm: %v", err)
+	}
+	if err := app.confirmConfigureYes(nil, nil); err != nil {
+		t.Fatalf("confirmConfigureYes: %v", err)
+	}
+	if app.ConfirmConfig.IsOpen() {
+		t.Errorf("ConfirmConfig.IsOpen() = true after confirmConfigureYes, want false")
+	}
+	if !app.ConfigForm.IsOpen() {
+		t.Errorf("ConfigForm.IsOpen() = false after confirmConfigureYes, want true")
+	}
+}
+
+func TestConfirmConfigureYesPreservesOriginalFocusForConfigFormClose(t *testing.T) {
+	app := newTestApp(t, t.TempDir())
+	previousFocused := app.focused
+
+	if err := app.openConfigConfirm(nil, nil); err != nil {
+		t.Fatalf("openConfigConfirm: %v", err)
+	}
+	if err := app.confirmConfigureYes(nil, nil); err != nil {
+		t.Fatalf("confirmConfigureYes: %v", err)
+	}
+	if err := app.cancelConfigForm(nil, nil); err != nil {
+		t.Fatalf("cancelConfigForm: %v", err)
+	}
+	if app.focused != previousFocused {
+		t.Errorf("focused = %q after cancelConfigForm, want restored to original %q", app.focused, previousFocused)
+	}
+}
+
+func TestConfigConfirmBlocksOtherModals(t *testing.T) {
+	app := newTestApp(t, t.TempDir())
+
+	if err := app.openConfigConfirm(nil, nil); err != nil {
+		t.Fatalf("openConfigConfirm: %v", err)
+	}
+	if err := app.openHelp(nil, nil); err != nil {
+		t.Fatalf("openHelp: %v", err)
+	}
+	if app.Help.IsOpen() {
+		t.Errorf("Help.IsOpen() = true after opening it while the config confirm was open, want blocked")
+	}
+}
+
+func TestSaveConfigFormNoOpWithoutLeaderArmed(t *testing.T) {
+	app := newTestApp(t, t.TempDir())
+	if err := app.openConfigForm(nil, nil); err != nil {
+		t.Fatalf("openConfigForm: %v", err)
+	}
+
+	if err := app.saveConfigForm(nil, nil); err != nil {
+		t.Fatalf("saveConfigForm: %v", err)
+	}
+	if !app.ConfigForm.IsOpen() {
+		t.Errorf("ConfigForm.IsOpen() = false after saveConfigForm without arming the leader, want unchanged true")
+	}
+}
+
+func TestSaveConfigFormNoOpWhenConfigFormClosed(t *testing.T) {
+	app := newTestApp(t, t.TempDir())
+	if err := app.armLeader(nil, nil); err != nil {
+		t.Fatalf("armLeader: %v", err)
+	}
+
+	if err := app.saveConfigForm(nil, nil); err != nil {
+		t.Fatalf("saveConfigForm: %v", err)
+	}
+	if app.ConfigForm.IsOpen() {
+		t.Errorf("ConfigForm.IsOpen() = true after saveConfigForm with the config page closed, want unchanged false")
+	}
+}
+
+func TestSaveConfigFormNoOpWhenHelpOpen(t *testing.T) {
+	app := newTestApp(t, t.TempDir())
+	if err := app.openConfigForm(nil, nil); err != nil {
+		t.Fatalf("openConfigForm: %v", err)
+	}
+	if err := app.openHelp(nil, nil); err != nil {
+		t.Fatalf("openHelp: %v", err)
+	}
+	if err := app.armLeader(nil, nil); err != nil {
+		t.Fatalf("armLeader: %v", err)
+	}
+
+	if err := app.saveConfigForm(nil, nil); err != nil {
+		t.Fatalf("saveConfigForm: %v", err)
+	}
+	if !app.ConfigForm.IsOpen() {
+		t.Errorf("ConfigForm.IsOpen() = false after saveConfigForm while Help covered it, want unchanged true (not saved)")
+	}
+}
+
+func TestQuitExitsConfigFormWhenLeaderArmed(t *testing.T) {
+	app := newTestApp(t, t.TempDir())
+	if err := app.openConfigForm(nil, nil); err != nil {
+		t.Fatalf("openConfigForm: %v", err)
+	}
+	if err := app.armLeader(nil, nil); err != nil {
+		t.Fatalf("armLeader: %v", err)
+	}
+
+	if err := app.quit(nil, nil); err != nil {
+		t.Fatalf("quit: %v, want nil (exit config page, not quit the app)", err)
+	}
+	if app.ConfigForm.IsOpen() {
+		t.Errorf("ConfigForm.IsOpen() = true after <leader>q, want closed")
+	}
+}
+
+func TestQuitNoOpWhenLeaderArmedButConfigFormClosed(t *testing.T) {
+	app := newTestApp(t, t.TempDir())
+	if err := app.armLeader(nil, nil); err != nil {
+		t.Fatalf("armLeader: %v", err)
+	}
+
+	if err := app.quit(nil, nil); err != nil {
+		t.Fatalf("quit: %v, want nil (leader+q has no meaning outside the config page)", err)
+	}
+}
+
+func TestQuitStillReturnsErrQuitWithoutLeader(t *testing.T) {
+	app := newTestApp(t, t.TempDir())
+
+	if err := app.quit(nil, nil); err != gocui.ErrQuit {
+		t.Errorf("quit() = %v, want gocui.ErrQuit", err)
+	}
+}
+
+func TestConsumeLeaderChordInViewRequiresSameView(t *testing.T) {
+	app := newTestApp(t, t.TempDir())
+	app.leaderArmedAt = time.Now()
+	app.leaderArmedInView = "configform-root"
+
+	if app.consumeLeaderChordInView("configform-ignore") {
+		t.Errorf("consumeLeaderChordInView(%q) = true, want false for a different view than %q", "configform-ignore", app.leaderArmedInView)
+	}
+}
+
+func TestConsumeLeaderChordInViewSucceedsForMatchingView(t *testing.T) {
+	app := newTestApp(t, t.TempDir())
+	app.leaderArmedAt = time.Now()
+	app.leaderArmedInView = "configform-root"
+
+	if !app.consumeLeaderChordInView("configform-root") {
+		t.Errorf("consumeLeaderChordInView(%q) = false, want true", "configform-root")
+	}
+	if app.consumeLeaderChordInView("configform-root") {
+		t.Errorf("consumeLeaderChordInView(%q) = true on second call, want false (already consumed)", "configform-root")
+	}
+}
+
+func TestConsumeLeaderChordInViewFailsWithoutArming(t *testing.T) {
+	app := newTestApp(t, t.TempDir())
+
+	if app.consumeLeaderChordInView("configform-root") {
+		t.Errorf("consumeLeaderChordInView(%q) = true without arming, want false", "configform-root")
+	}
+}
+
+func TestConsumeConfigFormChordIgnoresUnrelatedRune(t *testing.T) {
+	app := newTestApp(t, t.TempDir())
+	app.leaderArmedAt = time.Now()
+	app.leaderArmedInView = "configform-root"
+
+	if app.consumeConfigFormChord(nil, nil, 'x') {
+		t.Errorf("consumeConfigFormChord(_, _, 'x') = true, want false (not a recognized chord key)")
+	}
+	if !app.consumeLeaderChordInView("configform-root") {
+		t.Errorf("leader state was consumed by the unrelated rune, want it left armed")
+	}
+}
+
+func TestConsumeConfigFormChordFalseWithNilView(t *testing.T) {
+	app := newTestApp(t, t.TempDir())
+	app.leaderArmedAt = time.Now()
+	app.leaderArmedInView = "configform-root"
+
+	if app.consumeConfigFormChord(nil, nil, 's') {
+		t.Errorf("consumeConfigFormChord(_, nil, 's') = true, want false (nil view)")
 	}
 }
