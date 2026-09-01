@@ -262,3 +262,120 @@ func TestActivateSelectedRowItemOpensPreview(t *testing.T) {
 		t.Errorf("focused = %q after closePreview, want restored to %q", app.focused, previousFocused)
 	}
 }
+
+func TestToggleCategoriesHidesAndShows(t *testing.T) {
+	app := newTestApp(t, t.TempDir())
+
+	if err := app.armLeader(nil, nil); err != nil {
+		t.Fatalf("armLeader: %v", err)
+	}
+	if err := app.toggleCategories(nil, nil); err != nil {
+		t.Fatalf("toggleCategories: %v", err)
+	}
+	if app.categoriesVisible {
+		t.Fatalf("categoriesVisible = true after one toggle, want false")
+	}
+
+	if err := app.armLeader(nil, nil); err != nil {
+		t.Fatalf("armLeader: %v", err)
+	}
+	if err := app.toggleCategories(nil, nil); err != nil {
+		t.Fatalf("toggleCategories: %v", err)
+	}
+	if !app.categoriesVisible {
+		t.Fatalf("categoriesVisible = false after two toggles, want true")
+	}
+}
+
+func TestToggleCategoriesMovesFocusOffCategories(t *testing.T) {
+	app := newTestApp(t, t.TempDir())
+	if app.focused != app.Categories.WrapperName() {
+		t.Fatalf("focused = %q at startup, want the categories wrapper view", app.focused)
+	}
+
+	if err := app.armLeader(nil, nil); err != nil {
+		t.Fatalf("armLeader: %v", err)
+	}
+	if err := app.toggleCategories(nil, nil); err != nil {
+		t.Fatalf("toggleCategories: %v", err)
+	}
+	if app.focused != app.Content.WrapperName() {
+		t.Errorf("focused = %q after hiding categories, want the content wrapper view", app.focused)
+	}
+}
+
+func TestToggleCategoriesPreservesFocusOnContent(t *testing.T) {
+	app := newTestApp(t, t.TempDir())
+	app.focused = app.Content.WrapperName()
+
+	if err := app.armLeader(nil, nil); err != nil {
+		t.Fatalf("armLeader: %v", err)
+	}
+	if err := app.toggleCategories(nil, nil); err != nil {
+		t.Fatalf("toggleCategories: %v", err)
+	}
+	if app.focused != app.Content.WrapperName() {
+		t.Errorf("focused = %q after hiding categories, want unchanged content wrapper view", app.focused)
+	}
+}
+
+func TestToggleCategoriesNoOpWhenModalOpen(t *testing.T) {
+	app := newTestApp(t, t.TempDir())
+	if err := app.openHelp(nil, nil); err != nil {
+		t.Fatalf("openHelp: %v", err)
+	}
+
+	if err := app.armLeader(nil, nil); err != nil {
+		t.Fatalf("armLeader: %v", err)
+	}
+	if err := app.toggleCategories(nil, nil); err != nil {
+		t.Fatalf("toggleCategories: %v", err)
+	}
+	if !app.categoriesVisible {
+		t.Errorf("categoriesVisible = false after toggling with a modal open, want unchanged true")
+	}
+}
+
+func TestFocusCategoriesNoOpWhenHidden(t *testing.T) {
+	app := newTestApp(t, t.TempDir())
+	if err := app.armLeader(nil, nil); err != nil {
+		t.Fatalf("armLeader: %v", err)
+	}
+	if err := app.toggleCategories(nil, nil); err != nil {
+		t.Fatalf("toggleCategories: %v", err)
+	}
+	app.focused = app.Content.WrapperName()
+
+	if err := app.focusCategories(nil, nil); err != nil {
+		t.Fatalf("focusCategories: %v", err)
+	}
+	if app.focused != app.Content.WrapperName() {
+		t.Errorf("focused = %q after focusCategories while hidden, want unchanged content wrapper view", app.focused)
+	}
+}
+
+func TestToggleCategoriesRequiresLeaderArmed(t *testing.T) {
+	app := newTestApp(t, t.TempDir())
+
+	if err := app.toggleCategories(nil, nil); err != nil {
+		t.Fatalf("toggleCategories: %v", err)
+	}
+	if !app.categoriesVisible {
+		t.Errorf("categoriesVisible = false after toggleCategories without arming the leader, want unchanged true")
+	}
+}
+
+func TestToggleCategoriesLeaderExpires(t *testing.T) {
+	app := newTestApp(t, t.TempDir())
+	if err := app.armLeader(nil, nil); err != nil {
+		t.Fatalf("armLeader: %v", err)
+	}
+	app.leaderArmedAt = app.leaderArmedAt.Add(-2 * leaderTimeout)
+
+	if err := app.toggleCategories(nil, nil); err != nil {
+		t.Fatalf("toggleCategories: %v", err)
+	}
+	if !app.categoriesVisible {
+		t.Errorf("categoriesVisible = false after the leader window expired, want unchanged true")
+	}
+}

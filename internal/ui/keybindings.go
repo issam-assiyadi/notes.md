@@ -2,6 +2,7 @@ package ui
 
 import (
 	"log"
+	"time"
 
 	"github.com/awesome-gocui/gocui"
 )
@@ -12,6 +13,14 @@ type appKeyBinding struct {
 	desc string
 }
 
+// leaderChord marks a global keybinding's second key in a <leader>-prefixed
+// chord (Space, matching Vim's default leader, then the rune below). It
+// exists only for display: formatKey renders it as "<leader>x", while
+// BindKeys registers the underlying rune with gocui like any other key.
+type leaderChord rune
+
+const leaderTimeout = time.Second
+
 func (a *App) globalKeyBindings() []appKeyBinding {
 	return []appKeyBinding{
 		{gocui.KeyCtrlC, a.quit, "Quit"},
@@ -19,6 +28,7 @@ func (a *App) globalKeyBindings() []appKeyBinding {
 		{'r', a.rescan, "Rescan"},
 		{'1', a.focusCategories, "Focus categories pane"},
 		{'2', a.focusItems, "Focus items pane"},
+		{leaderChord('e'), a.toggleCategories, "Toggle categories pane"},
 		{'?', a.openHelp, "Show keybinding help"},
 	}
 }
@@ -40,13 +50,19 @@ func (a *App) itemKeyBindings() []appKeyBinding {
 		{'k', a.rowMoveUp, "Move up"},
 		{gocui.KeyEnter, a.activateSelectedRow, "Open item / toggle folder"},
 		{'o', a.activateSelectedRow, "Open item / toggle folder"},
-		{gocui.KeySpace, a.activateSelectedRow, "Open item / toggle folder"},
 	}
 }
 
 func (a *App) BindKeys(g *gocui.Gui) error {
+	if err := g.SetKeybinding("", gocui.KeySpace, gocui.ModNone, a.armLeader); err != nil {
+		return err
+	}
 	for _, b := range a.globalKeyBindings() {
-		if err := g.SetKeybinding("", b.key, gocui.ModNone, b.fn); err != nil {
+		key := b.key
+		if lc, ok := key.(leaderChord); ok {
+			key = rune(lc)
+		}
+		if err := g.SetKeybinding("", key, gocui.ModNone, b.fn); err != nil {
 			return err
 		}
 	}
@@ -93,12 +109,60 @@ func (a *App) quit(g *gocui.Gui, v *gocui.View) error {
 }
 
 func (a *App) focusCategories(g *gocui.Gui, v *gocui.View) error {
-	if a.modalOpen() {
+	if a.modalOpen() || !a.categoriesVisible {
 		return nil
 	}
 	a.focused = a.Categories.WrapperName()
 	_, err := g.SetCurrentView(a.focused)
 	return err
+}
+
+// armLeader starts the <leader> chord's timeout window on Space, Vim's
+// default leader key. It's registered directly rather than through
+// globalKeyBindings so it stays out of the help modal - by itself it does
+// nothing a user would want listed as a binding.
+func (a *App) armLeader(g *gocui.Gui, v *gocui.View) error {
+	a.leaderArmedAt = time.Now()
+	return nil
+}
+
+// consumeLeader reports whether Space was pressed within leaderTimeout of
+// now, and clears the pending state either way so a chord can't be
+// completed twice or after the window closes.
+func (a *App) consumeLeader() bool {
+	armed := !a.leaderArmedAt.IsZero() && time.Since(a.leaderArmedAt) <= leaderTimeout
+	a.leaderArmedAt = time.Time{}
+	return armed
+}
+
+// toggleCategories shows or hides the Categories pane so Content can
+// expand to fill the freed width. modalOpen() guards against leaving a
+// modal's previousFocused pointing at a view we're about to delete. The
+// synchronous a.layout(g) call is required: run.go's manager renders
+// before it lays out, so without this the re-shown pane would draw one
+// empty frame before its views exist.
+func (a *App) toggleCategories(g *gocui.Gui, v *gocui.View) error {
+	if !a.consumeLeader() || a.modalOpen() {
+		return nil
+	}
+	a.categoriesVisible = !a.categoriesVisible
+	if !a.categoriesVisible {
+		a.Categories.Delete(g)
+		if a.focused == a.Categories.WrapperName() {
+			a.focused = a.Content.WrapperName()
+		}
+	}
+
+	if g == nil {
+		return nil
+	}
+	if err := a.layout(g); err != nil {
+		return err
+	}
+	if _, err := g.SetCurrentView(a.focused); err != nil {
+		log.Println("categories: unable to focus view:", err)
+	}
+	return nil
 }
 
 func (a *App) focusItems(g *gocui.Gui, v *gocui.View) error {

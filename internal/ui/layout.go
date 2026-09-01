@@ -14,21 +14,23 @@ func (a *App) layout(g *gocui.Gui) error {
 		return nil
 	}
 
-	sidebarWidth := max(maxX/4, 20)
-	if sidebarWidth > maxX-2 {
-		sidebarWidth = maxX - 2
-	}
-	if sidebarWidth < 2 {
-		sidebarWidth = 2
-	}
-
 	paneBottom := maxY - 2
 
-	if err := a.Categories.Layout(g, 0, 0, sidebarWidth-1, paneBottom); err != nil {
-		return err
+	contentLeft := 0
+	if a.categoriesVisible {
+		sidebarWidth := max(maxX/4, 20)
+		if sidebarWidth > maxX-2 {
+			sidebarWidth = maxX - 2
+		}
+		if sidebarWidth < 2 {
+			sidebarWidth = 2
+		}
+		if err := a.Categories.Layout(g, 0, 0, sidebarWidth-1, paneBottom); err != nil {
+			return err
+		}
+		contentLeft = sidebarWidth
 	}
 
-	contentLeft := sidebarWidth
 	contentTop := 0
 	contentRight := maxX - 1
 	contentBottom := paneBottom

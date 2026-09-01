@@ -44,21 +44,23 @@ func selectedRowStyle(fgColor gocui.Attribute) string {
 }
 
 func (a *App) Render(g *gocui.Gui) error {
-	categoryStyle := selectedRowStyle(a.Categories.FocusFgColor(g))
-	if err := a.Categories.Render(g, a.CategorySelected, func(v *gocui.View, contentWidth int) error {
-		rowWidth := contentWidth - len("  ")
-		for i, kind := range categoryOrder {
-			count := len(a.itemsByCategory[kind])
-			row := "  " + formatCategoryRow(rowWidth, kind, count)
-			if i == a.CategorySelected {
-				_, _ = fmt.Fprintf(v, "%s%s%s\n", categoryStyle, row, rowStyleReset)
-			} else {
-				_, _ = fmt.Fprintln(v, row)
+	if a.categoriesVisible {
+		categoryStyle := selectedRowStyle(a.Categories.FocusFgColor(g))
+		if err := a.Categories.Render(g, a.CategorySelected, func(v *gocui.View, contentWidth int) error {
+			rowWidth := contentWidth - len("  ")
+			for i, kind := range categoryOrder {
+				count := len(a.itemsByCategory[kind])
+				row := "  " + formatCategoryRow(rowWidth, kind, count)
+				if i == a.CategorySelected {
+					_, _ = fmt.Fprintf(v, "%s%s%s\n", categoryStyle, row, rowStyleReset)
+				} else {
+					_, _ = fmt.Fprintln(v, row)
+				}
 			}
+			return nil
+		}); err != nil {
+			return err
 		}
-		return nil
-	}); err != nil {
-		return err
 	}
 
 	rows := a.visibleRows()

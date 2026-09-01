@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"time"
+
 	"github.com/issam-assiyadi/leftmark/application"
 	"github.com/issam-assiyadi/leftmark/domain"
 	"github.com/issam-assiyadi/leftmark/internal/ui/components/modal"
@@ -19,6 +21,9 @@ type App struct {
 
 	CategorySelected int
 	RowSelected      int
+
+	categoriesVisible bool
+	leaderArmedAt     time.Time
 
 	Categories *scrollview.View
 	Content    *scrollview.View
@@ -55,6 +60,7 @@ func New(svc *application.Service) (*App, error) {
 		}),
 	}
 	a.focused = a.Categories.WrapperName()
+	a.categoriesVisible = true
 
 	items, err := svc.Scan()
 	if err != nil {

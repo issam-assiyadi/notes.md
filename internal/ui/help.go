@@ -61,6 +61,8 @@ func formatKey(key interface{}) string {
 	switch k := key.(type) {
 	case rune:
 		return string(k)
+	case leaderChord:
+		return "<leader>" + string(rune(k))
 	case gocui.Key:
 		if label, ok := keyLabels[k]; ok {
 			return label
