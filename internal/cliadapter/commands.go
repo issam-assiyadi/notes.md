@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/issam-assiyadi/leftmark"
 	"github.com/issam-assiyadi/leftmark/adapter/config"
@@ -14,6 +15,33 @@ import (
 	"github.com/issam-assiyadi/leftmark/application"
 	"github.com/issam-assiyadi/leftmark/domain"
 )
+
+var scanCategories = []domain.Kind{domain.KindTODO, domain.KindFIXME, domain.KindNOTE, domain.KindQUESTION}
+
+// parseCategory resolves a --category flag value to a domain.Kind,
+// case-insensitively. An empty input means "no filter" and is always valid.
+func parseCategory(s string) (kind domain.Kind, ok bool) {
+	if s == "" {
+		return "", true
+	}
+	upper := domain.Kind(strings.ToUpper(s))
+	for _, k := range scanCategories {
+		if k == upper {
+			return k, true
+		}
+	}
+	return "", false
+}
+
+func filterByKind(items []domain.Item, kind domain.Kind) []domain.Item {
+	var filtered []domain.Item
+	for _, item := range items {
+		if item.Kind == kind {
+			filtered = append(filtered, item)
+		}
+	}
+	return filtered
+}
 
 func newService(root string) (*application.Service, error) {
 	explicitRoot := root != ""
@@ -68,7 +96,14 @@ func runScan(args []string, stdout, stderr io.Writer) int {
 	fs.SetOutput(stderr)
 	root := fs.String("root", "", "repo root (default: current directory)")
 	jsonOut := fs.Bool("json", false, "print JSON")
+	category := fs.String("category", "", "filter by category: TODO, FIXME, NOTE, or QUESTION")
 	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+
+	kind, ok := parseCategory(*category)
+	if !ok {
+		printf(stderr, "unknown category %q, want one of TODO, FIXME, NOTE, QUESTION\n", *category)
 		return 2
 	}
 
@@ -82,6 +117,9 @@ func runScan(args []string, stdout, stderr io.Writer) int {
 	if err != nil {
 		printf(stderr, "%v\n", err)
 		return 1
+	}
+	if kind != "" {
+		items = filterByKind(items, kind)
 	}
 	return printItems(items, *jsonOut, stdout)
 }
