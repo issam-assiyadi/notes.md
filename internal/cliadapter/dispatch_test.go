@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/issam-assiyadi/leftmark/internal/cliadapter"
@@ -32,6 +33,30 @@ func TestUnknownArgsFallThroughToTUI(t *testing.T) {
 	handled, _ := cliadapter.Dispatch(nil, &out, &errBuf)
 	if handled {
 		t.Errorf("Dispatch(nil) should not be handled, so the caller falls back to the TUI")
+	}
+}
+
+func TestVersionFlag(t *testing.T) {
+	for _, arg := range []string{"--version", "-v", "version"} {
+		stdout, _, code := run(t, arg)
+		if code != 0 {
+			t.Errorf("Dispatch(%q) exit=%d, want 0", arg, code)
+		}
+		if !strings.HasPrefix(stdout, "leftmark ") {
+			t.Errorf("Dispatch(%q) stdout=%q, want prefix %q", arg, stdout, "leftmark ")
+		}
+	}
+}
+
+func TestHelpFlag(t *testing.T) {
+	for _, arg := range []string{"--help", "-h", "help"} {
+		stdout, _, code := run(t, arg)
+		if code != 0 {
+			t.Errorf("Dispatch(%q) exit=%d, want 0", arg, code)
+		}
+		if !strings.HasPrefix(stdout, "leftmark ") {
+			t.Errorf("Dispatch(%q) stdout=%q, want prefix %q", arg, stdout, "leftmark ")
+		}
 	}
 }
 

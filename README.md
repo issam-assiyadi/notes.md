@@ -26,6 +26,26 @@ In short:
 
 Coming soon.
 
+## Installation
+
+### Go install
+
+```bash
+go install github.com/issam-assiyadi/leftmark/tui/leftmark@latest
+```
+
+### Homebrew
+
+```bash
+brew tap issam-assiyadi/homebrew-tap
+brew install leftmark
+```
+
+### Prebuilt binaries
+
+Download the archive for your OS/arch from the [Releases page](https://github.com/issam-assiyadi/leftmark/releases),
+extract it, and place the `leftmark` binary on your `PATH`.
+
 ## How it works
 
 1. **Scan.** `leftmark` walks your project (respecting `.gitignore`) looking for `TODO`, `FIXME`, `NOTE`, and `QUESTION` comments, in any language. Every scan is fresh: nothing is written back to your source and nothing persists between runs.
