@@ -20,7 +20,7 @@ In short:
 
 ### TUI
 
-![TUI demo](docs/demos/tui-demo.gif)
+![TUI demo](docs/demos/tui-v1.gif)
 
 ### CLI
 
