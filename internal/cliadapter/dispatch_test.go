@@ -55,6 +55,37 @@ func TestScanOverCLI(t *testing.T) {
 	}
 }
 
+func TestScanFiltersByCategory(t *testing.T) {
+	dir := t.TempDir()
+	mainGo := filepath.Join(dir, "main.go")
+	if err := os.WriteFile(mainGo, []byte("// TODO: a\n// FIXME: b\n"), 0o644); err != nil {
+		t.Fatalf("seed fixture: %v", err)
+	}
+
+	stdout, stderr, code := run(t, "scan", "--root", dir, "--json", "--category", "fixme")
+	if code != 0 {
+		t.Fatalf("scan exit=%d stderr=%s", code, stderr)
+	}
+	var scanned []item
+	if err := json.Unmarshal([]byte(stdout), &scanned); err != nil {
+		t.Fatalf("unmarshal scan output %q: %v", stdout, err)
+	}
+	if len(scanned) != 1 || scanned[0].Kind != "FIXME" {
+		t.Fatalf("scan output = %+v, want one FIXME item", scanned)
+	}
+}
+
+func TestScanRejectsUnknownCategory(t *testing.T) {
+	dir := t.TempDir()
+	_, stderr, code := run(t, "scan", "--root", dir, "--category", "bogus")
+	if code != 2 {
+		t.Fatalf("scan exit=%d, want 2", code)
+	}
+	if stderr == "" {
+		t.Fatalf("expected an error message on stderr for an unknown category")
+	}
+}
+
 func TestReportOverCLI(t *testing.T) {
 	dir := t.TempDir()
 	mainGo := filepath.Join(dir, "main.go")
