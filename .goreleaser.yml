@@ -1,0 +1,57 @@
+version: 2
+
+before:
+  hooks:
+    - go mod download
+
+builds:
+  - id: leftmark
+    binary: leftmark
+    main: ./tui/leftmark
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X github.com/issam-assiyadi/leftmark/internal/version.version={{.Version}}
+
+archives:
+  - id: leftmark
+    formats: [tar.gz]
+    name_template: >-
+      {{ .ProjectName }}_{{ .Os }}_{{ .Arch }}
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  use: github
+
+release:
+  github:
+    owner: issam-assiyadi
+    name: leftmark
+  draft: true
+
+homebrew_casks:
+  - name: leftmark
+    repository:
+      owner: issam-assiyadi
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    directory: Casks
+    homepage: "https://github.com/issam-assiyadi/leftmark"
+    description: "A scanner for the TODOs, FIXMEs, notes, and questions you already leave in your codebase."
+    license: "MIT"
+    binaries: [leftmark]
+    hooks:
+      post:
+        install: |
+          if system_command("/usr/bin/xattr", args: ["-h"]).exit_status == 0
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/leftmark"]
+          end
