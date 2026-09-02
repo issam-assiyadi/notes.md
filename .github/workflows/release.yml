@@ -25,14 +25,12 @@ jobs:
       - name: Run tests
         run: make test
 
-      # --skip=homebrew until issam-assiyadi/homebrew-tap exists and
-      # HOMEBREW_TAP_TOKEN is set; drop it once the tap is ready.
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
           version: "~> v2"
-          args: release --clean --skip=homebrew
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
