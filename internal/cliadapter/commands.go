@@ -9,20 +9,38 @@ import (
 	"sort"
 
 	"github.com/issam-assiyadi/leftmark"
+	"github.com/issam-assiyadi/leftmark/adapter/config"
 	"github.com/issam-assiyadi/leftmark/adapter/githook"
 	"github.com/issam-assiyadi/leftmark/application"
 	"github.com/issam-assiyadi/leftmark/domain"
 )
 
 func newService(root string) (*application.Service, error) {
-	if root == "" {
+	explicitRoot := root != ""
+	if !explicitRoot {
 		wd, err := os.Getwd()
 		if err != nil {
 			return nil, err
 		}
 		root = wd
 	}
-	return leftmark.New(root), nil
+
+	var ignore []string
+	if path, err := config.DefaultPath(); err == nil {
+		if reg, err := config.Load(path); err == nil {
+			if matchedRoot, proj, found := config.Lookup(reg, root); found {
+				ignore = proj.Ignore
+				// An explicit -root is the user's final word on where to
+				// scan; only a root defaulted from cwd gets resolved up
+				// to its registered ancestor, matching the TUI.
+				if !explicitRoot {
+					root = matchedRoot
+				}
+			}
+		}
+	}
+
+	return leftmark.New(root, ignore...), nil
 }
 
 func printItems(items []domain.Item, asJSON bool, stdout io.Writer) int {

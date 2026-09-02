@@ -6,6 +6,8 @@ import (
 
 	"github.com/awesome-gocui/gocui"
 
+	"github.com/issam-assiyadi/leftmark/internal/ui/components/confirmmodal"
+	"github.com/issam-assiyadi/leftmark/internal/ui/components/formpage"
 	"github.com/issam-assiyadi/leftmark/internal/ui/components/modal"
 )
 
@@ -25,6 +27,8 @@ func (a *App) helpSections() []helpSection {
 		{"Categories pane", toHelpLines(a.categoryKeyBindings())},
 		{"Items pane", toHelpLines(a.itemKeyBindings())},
 		{"Modal controls", fromModalEntries(a.Preview.HelpEntries())},
+		{"Config form", fromFormPageEntries(a.ConfigForm.HelpEntries())},
+		{"Config confirm", fromConfirmModalEntries(a.ConfirmConfig.HelpEntries())},
 	}
 }
 
@@ -44,6 +48,22 @@ func fromModalEntries(entries []modal.HelpEntry) []helpLine {
 	return lines
 }
 
+func fromFormPageEntries(entries []formpage.HelpEntry) []helpLine {
+	lines := make([]helpLine, len(entries))
+	for i, e := range entries {
+		lines[i] = helpLine{key: e.Key, desc: e.Desc}
+	}
+	return lines
+}
+
+func fromConfirmModalEntries(entries []confirmmodal.HelpEntry) []helpLine {
+	lines := make([]helpLine, len(entries))
+	for i, e := range entries {
+		lines[i] = helpLine{key: e.Key, desc: e.Desc}
+	}
+	return lines
+}
+
 var keyLabels = map[gocui.Key]string{
 	gocui.KeyArrowDown: "↓",
 	gocui.KeyArrowUp:   "↑",
@@ -55,6 +75,9 @@ var keyLabels = map[gocui.Key]string{
 	gocui.KeyHome:      "Home",
 	gocui.KeyEnd:       "End",
 	gocui.KeyCtrlC:     "Ctrl+C",
+	gocui.KeyTab:       "Tab",
+	gocui.KeyBacktab:   "Shift+Tab",
+	gocui.KeyCtrlS:     "Ctrl+S",
 }
 
 func formatKey(key interface{}) string {
@@ -73,8 +96,28 @@ func formatKey(key interface{}) string {
 	}
 }
 
+// renderHelp draws the help modal's sections. It's shared between the
+// browse view's Render and the config page's Render (see render.go) since
+// Help can open as an overlay on top of either.
+func (a *App) renderHelp(g *gocui.Gui) error {
+	return a.Help.Render(g, func(v *gocui.View, contentWidth int) error {
+		for _, section := range a.helpSections() {
+			_, _ = fmt.Fprintf(v, "%s\n", section.title)
+			for _, line := range section.lines {
+				_, _ = fmt.Fprintf(v, "  %-10s %s\n", formatKey(line.key), line.desc)
+			}
+			_, _ = fmt.Fprintln(v)
+		}
+		return nil
+	})
+}
+
+// openHelp deliberately excludes ConfigForm from its guard: Help is meant
+// to be reachable from the config page too (its own status bar always
+// advertises "? Help"), as an overlay on top of it rather than a
+// replacement for it.
 func (a *App) openHelp(g *gocui.Gui, v *gocui.View) error {
-	if a.modalOpen() {
+	if a.Preview.IsOpen() || a.Help.IsOpen() || a.ConfirmConfig.IsOpen() {
 		return nil
 	}
 	a.focused = a.Help.Open(a.focused, " Keybindings ", -1)

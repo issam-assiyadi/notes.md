@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/issam-assiyadi/leftmark"
+	"github.com/issam-assiyadi/leftmark/adapter/config"
 	"github.com/issam-assiyadi/leftmark/internal/cliadapter"
 	"github.com/issam-assiyadi/leftmark/internal/ui"
 )
@@ -14,14 +15,34 @@ func main() {
 		os.Exit(code)
 	}
 
-	root, err := os.Getwd()
+	cwd, err := os.Getwd()
 	if err != nil {
 		log.Fatalf("getwd: %v", err)
 	}
 
-	svc := leftmark.New(root)
+	registryPath, err := config.DefaultPath()
+	if err != nil {
+		log.Fatalf("config path: %v", err)
+	}
+	registry, err := config.Load(registryPath)
+	if err != nil {
+		log.Fatalf("load config: %v", err)
+	}
 
-	a, err := ui.New(svc)
+	root, projectCfg, registered := config.Lookup(registry, cwd)
+	if !registered {
+		root = cwd
+	}
+
+	svc := leftmark.New(root, projectCfg.Ignore...)
+
+	a, err := ui.New(svc, ui.StartupConfig{
+		RegistryPath: registryPath,
+		Registry:     registry,
+		Root:         root,
+		Ignore:       projectCfg.Ignore,
+		Registered:   registered,
+	})
 	if err != nil {
 		log.Fatalf("ui: %v", err)
 	}

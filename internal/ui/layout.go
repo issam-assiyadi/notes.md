@@ -16,6 +16,16 @@ func (a *App) layout(g *gocui.Gui) error {
 
 	paneBottom := maxY - 2
 
+	if a.ConfigForm.IsOpen() {
+		if err := a.layoutStatusBar(g, maxX, maxY); err != nil {
+			return err
+		}
+		if err := a.ConfigForm.Layout(g, 0, 0, maxX-1, paneBottom); err != nil {
+			return err
+		}
+		return a.Help.Layout(g, maxX, maxY)
+	}
+
 	contentLeft := 0
 	if a.categoriesVisible {
 		sidebarWidth := max(maxX/4, 20)
@@ -47,5 +57,8 @@ func (a *App) layout(g *gocui.Gui) error {
 	if err := a.Preview.Layout(g, maxX, maxY); err != nil {
 		return err
 	}
-	return a.Help.Layout(g, maxX, maxY)
+	if err := a.Help.Layout(g, maxX, maxY); err != nil {
+		return err
+	}
+	return a.ConfirmConfig.Layout(g, maxX, maxY)
 }

@@ -44,6 +44,16 @@ func selectedRowStyle(fgColor gocui.Attribute) string {
 }
 
 func (a *App) Render(g *gocui.Gui) error {
+	if a.ConfigForm.IsOpen() {
+		if err := a.renderStatusBar(g); err != nil {
+			return err
+		}
+		if err := a.ConfigForm.Render(g); err != nil {
+			return err
+		}
+		return a.renderHelp(g)
+	}
+
 	if a.categoriesVisible {
 		categoryStyle := selectedRowStyle(a.Categories.FocusFgColor(g))
 		if err := a.Categories.Render(g, a.CategorySelected, func(v *gocui.View, contentWidth int) error {
@@ -118,16 +128,11 @@ func (a *App) Render(g *gocui.Gui) error {
 		return err
 	}
 
-	return a.Help.Render(g, func(v *gocui.View, contentWidth int) error {
-		for _, section := range a.helpSections() {
-			_, _ = fmt.Fprintf(v, "%s\n", section.title)
-			for _, line := range section.lines {
-				_, _ = fmt.Fprintf(v, "  %-10s %s\n", formatKey(line.key), line.desc)
-			}
-			_, _ = fmt.Fprintln(v)
-		}
-		return nil
-	})
+	if err := a.renderHelp(g); err != nil {
+		return err
+	}
+
+	return a.ConfirmConfig.Render(g)
 }
 
 const categoryMetaRightPad = 1
